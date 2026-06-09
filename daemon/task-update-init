@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# Update task service
+# This is for Docker containers that run init and not systemd
+if [ -f /usr/local/task-daemon/task.php ]; then
+    cd /usr/local/task-daemon
+    git pull
+
+    if [ -f /etc/init.d/task ]; then
+        /etc/init.d/task stop
+    fi
+
+    rm -f /run/task/task.pid
+    rm -f /etc/init.d/task
+    rm -f /usr/local/bin/task.php
+    rm -f /usr/local/bin/task-child.php
+    cp -p /usr/local/task-daemon/task.init /etc/init.d/task
+    cp -p /usr/local/task-daemon/task.php /usr/local/bin/task.php
+    cp -p /usr/local/task-daemon/task-child.php /usr/local/bin/task-child.php
+    chmod 755 /etc/init.d/task
+    chmod 755 /usr/local/bin/task.php
+    chmod 755 /usr/local/bin/task-child.php
+    /etc/init.d/task start
+fi

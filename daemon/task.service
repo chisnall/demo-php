@@ -1,0 +1,16 @@
+[Unit]
+Description=Task Daemon
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/php /usr/local/bin/task.php
+PIDFile=/run/task/task.pid
+Restart=always
+User=root
+Group=root
+WorkingDirectory=/usr/local/bin
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

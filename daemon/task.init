@@ -1,0 +1,106 @@
+#!/bin/bash
+
+### BEGIN INIT INFO
+# Provides:          task.php
+# Required-Start:
+# Required-Stop:
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: PHP Task Daemon
+### END INIT INFO
+
+# Traps
+# SIG 1  (HUP)
+# SIG 3  (QUIT)
+# SIG 15 (TERM)
+
+# Load LSB functions
+. /lib/lsb/init-functions
+
+# Config
+PID_FILE="/run/task/task.pid"
+LOG_FILE="/var/log/task.log"
+SCRIPT="/usr/local/bin/task.php"
+
+start() {
+    log_daemon_msg "Starting Task Daemon"
+
+    if [ -f "$PID_FILE" ] && kill -0 $(cat "$PID_FILE") 2>/dev/null; then
+        log_progress_msg "already running"
+        log_end_msg 0
+        return
+    fi
+
+    # Start the PHP script in background
+    nohup "$SCRIPT" >> "$LOG_FILE" 2>&1 &
+
+    # Wait a moment for the PID file to be created
+    for i in {1..10}; do
+        if [ -f "$PID_FILE" ]; then
+            break
+        fi
+        sleep 0.2
+    done
+
+    if [ -f "$PID_FILE" ]; then
+        log_end_msg 0
+    else
+        log_end_msg 1
+    fi
+}
+
+stop() {
+    log_daemon_msg "Stopping Task Daemon"
+
+    if [ -f "$PID_FILE" ]; then
+        PID=$(cat "$PID_FILE")
+        if kill -0 "$PID" 2>/dev/null; then
+            kill "$PID"
+            # Wait for the process to exit
+            for i in {1..15}; do
+                if ! kill -0 "$PID" 2>/dev/null; then
+                    break
+                fi
+                sleep 0.2
+            done
+            rm -f "$PID_FILE"
+            log_end_msg 0
+            return
+        fi
+    fi
+
+    log_progress_msg "not running"
+    log_end_msg 0
+}
+
+status() {
+    if [ -f "$PID_FILE" ] && kill -0 $(cat "$PID_FILE") 2>/dev/null; then
+        echo "Task Daemon is running (PID $(cat "$PID_FILE"))"
+        exit 0
+    else
+        echo "Task Daemon is not running"
+        exit 1
+    fi
+}
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    restart)
+        stop
+        start
+        ;;
+    status)
+        status
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|restart|status}"
+        exit 1
+        ;;
+esac
+
+exit 0

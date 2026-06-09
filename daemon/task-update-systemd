@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# Update task service
+# This is for systems that are systemd based
+if [ -f /usr/local/task-daemon/task.php ]; then
+    remoteUser="webdev"
+
+    cd /usr/local/task-daemon
+    su -c "git pull" $remoteUser
+
+    systemctl stop task
+
+    rm -f /run/task/task.pid
+    rm -f /usr/local/bin/task.php
+    rm -f /usr/local/bin/task-child.php
+    cp -p /usr/local/task-daemon/task.php /usr/local/bin/task.php
+    cp -p /usr/local/task-daemon/task-child.php /usr/local/bin/task-child.php
+    chmod 755 /usr/local/bin/task.php
+    chmod 755 /usr/local/bin/task-child.php
+
+    systemctl daemon-reload
+    systemctl enable task
+    systemctl start task
+fi
